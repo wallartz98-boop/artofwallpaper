@@ -1,0 +1,465 @@
+# ArtofWallpaper
+
+Project: Static website (dark mode, modern, grid thumbnails) for wallpapers.
+
+Structure:
+
+```
+ArtofWallpaper/
+├─ index.html
+├─ phone.html
+├─ pc.html
+├─ ipad.html
+├─ about.html
+├─ style.css
+├─ script.js
+└─ images/
+   ├─ phone/
+   │  ├─ list.json
+   │  ├─ phone1.jpg
+   │  └─ ...
+   ├─ pc/
+   │  ├─ list.json
+   │  ├─ pc1.jpg
+   │  └─ ...
+   └─ ipad/
+      ├─ list.json
+      ├─ ipad1.jpg
+      └─ ...
+```
+
+---
+
+## Notes about fixes applied
+
+The error you reported (`ReferenceError: initGallery is not defined`) was caused by the page attempting to call the initialization before the `script.js` file was properly loaded **and** by absolute root paths (leading `/`) that cause resources to 404 when the site is hosted in a subdirectory (e.g. `https://username.github.io/artofwallpaper/`).
+
+What I changed in this document to fix the issue:
+- All resource paths (CSS, JS, images, list.json) are now **relative** (no leading `/`) so they work whether you deploy at site root or a sub-path.
+- The external `script.js` is included with `defer` so it will load and parse before `DOMContentLoaded`.
+- The gallery auto-initialization is done **inside `script.js`** on `DOMContentLoaded` by reading a `data-device` attribute on `<body>`. This guarantees `initGallery` is available when it's called.
+- Improved error handling and clearer messages for missing `list.json`.
+
+---
+
+## --- index.html ---
+
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ArtofWallpaper</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- AdSense placeholder: add your client ID when approved -->
+  <!--
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=YOUR-ADSENSE-CLIENT" crossorigin="anonymous"></script>
+  -->
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="index.html">ArtofWallpaper</a>
+      <nav>
+        <a href="phone.html">Điện thoại</a>
+        <a href="pc.html">Máy tính</a>
+        <a href="ipad.html">iPad</a>
+        <a href="about.html">About</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="hero">
+    <div class="container center">
+      <h1>ArtofWallpaper</h1>
+      <p class="lead">Bộ sưu tập hình nền chất lượng cao cho Điện thoại · Máy tính · iPad</p>
+      <div class="ctas">
+        <a class="btn" href="phone.html">Hình nền Điện thoại</a>
+        <a class="btn outline" href="pc.html">Hình nền Máy tính</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">© <span id="year"></span> ArtofWallpaper · Made with ❤️</div>
+  </footer>
+
+  <script>document.getElementById('year') && (document.getElementById('year').textContent = new Date().getFullYear());</script>
+</body>
+</html>
+
+
+## --- phone.html ---
+
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ArtofWallpaper — Điện thoại</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- AdSense placeholder: uncomment when you have client id -->
+  <!--
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=YOUR-ADSENSE-CLIENT" crossorigin="anonymous"></script>
+  -->
+  <script src="script.js" defer></script>
+</head>
+<body data-device="phone">
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="index.html">ArtofWallpaper</a>
+      <nav>
+        <a href="phone.html" class="active">Điện thoại</a>
+        <a href="pc.html">Máy tính</a>
+        <a href="ipad.html">iPad</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container page">
+    <div class="toolbar">
+      <input id="search" placeholder="Tìm hình theo tên (ví dụ: sunset, abstract)" autocomplete="off">
+      <select id="sort">
+        <option value="newest">Mặc định</option>
+        <option value="name">Tên (A → Z)</option>
+      </select>
+    </div>
+
+    <!-- Ad slot (responsive) -->
+    <div class="ad-slot">
+      <!-- Place AdSense code here -->
+      <div class="ad-placeholder">Quảng cáo</div>
+    </div>
+
+    <div id="gallery" class="grid"></div>
+  </main>
+
+  <!-- Modal for preview -->
+  <div id="previewModal" class="modal">
+    <div class="modal-inner">
+      <button class="modal-close" id="modalClose">✕</button>
+      <img id="previewImg" src="" alt="preview">
+      <div class="modal-actions">
+        <a id="downloadBtn" class="btn" download>Download</a>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
+
+
+## --- pc.html ---
+
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ArtofWallpaper — Máy tính</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body data-device="pc">
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="index.html">ArtofWallpaper</a>
+      <nav>
+        <a href="phone.html">Điện thoại</a>
+        <a href="pc.html" class="active">Máy tính</a>
+        <a href="ipad.html">iPad</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container page">
+    <div class="toolbar">
+      <input id="search" placeholder="Tìm hình theo tên" autocomplete="off">
+      <select id="sort">
+        <option value="newest">Mặc định</option>
+        <option value="name">Tên (A → Z)</option>
+      </select>
+    </div>
+
+    <div class="ad-slot"><div class="ad-placeholder">Quảng cáo</div></div>
+
+    <div id="gallery" class="grid"></div>
+  </main>
+
+  <div id="previewModal" class="modal">
+    <div class="modal-inner">
+      <button class="modal-close" id="modalClose">✕</button>
+      <img id="previewImg" src="" alt="preview">
+      <div class="modal-actions">
+        <a id="downloadBtn" class="btn" download>Download</a>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
+
+
+## --- ipad.html ---
+
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ArtofWallpaper — iPad</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body data-device="ipad">
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="index.html">ArtofWallpaper</a>
+      <nav>
+        <a href="phone.html">Điện thoại</a>
+        <a href="pc.html">Máy tính</a>
+        <a href="ipad.html" class="active">iPad</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container page">
+    <div class="toolbar">
+      <input id="search" placeholder="Tìm hình theo tên" autocomplete="off">
+      <select id="sort">
+        <option value="newest">Mặc định</option>
+        <option value="name">Tên (A → Z)</option>
+      </select>
+    </div>
+
+    <div class="ad-slot"><div class="ad-placeholder">Quảng cáo</div></div>
+
+    <div id="gallery" class="grid"></div>
+  </main>
+
+  <div id="previewModal" class="modal">
+    <div class="modal-inner">
+      <button class="modal-close" id="modalClose">✕</button>
+      <img id="previewImg" src="" alt="preview">
+      <div class="modal-actions">
+        <a id="downloadBtn" class="btn" download>Download</a>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
+
+
+## --- about.html ---
+
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>About · ArtofWallpaper</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="index.html">ArtofWallpaper</a>
+      <nav>
+        <a href="phone.html">Điện thoại</a>
+        <a href="pc.html">Máy tính</a>
+        <a href="ipad.html">iPad</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container page">
+    <h2>Về ArtofWallpaper</h2>
+    <p>ArtofWallpaper là bộ sưu tập hình nền chất lượng cao cho nhiều thiết bị. Bạn có thể tải miễn phí và sử dụng cho mục đích cá nhân.</p>
+    <p>Nếu bạn muốn hợp tác hoặc gửi ảnh, hãy liên hệ: <a href="mailto:you@example.com">you@example.com</a></p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">© <span id="year2"></span> ArtofWallpaper</div>
+  </footer>
+  <script>document.getElementById('year2') && (document.getElementById('year2').textContent = new Date().getFullYear());</script>
+</body>
+</html>
+
+
+## --- style.css ---
+
+/* Reset & base */
+:root{
+  --bg:#0b0f13;
+  --card:#0f1418;
+  --muted:#9aa4ad;
+  --accent:#7c5cff;
+  --glass: rgba(255,255,255,0.03);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;background:linear-gradient(180deg,var(--bg),#06070a);color:#e6eef6}
+.container{max-width:1200px;margin:0 auto;padding:20px}
+.site-header{backdrop-filter:blur(6px);background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-bottom:1px solid rgba(255,255,255,0.03)}
+.site-header .container{display:flex;align-items:center;justify-content:space-between}
+.brand{font-weight:700;color:#fff;text-decoration:none;font-size:1.1rem}
+nav a{color:var(--muted);margin-left:18px;text-decoration:none}
+nav a.active{color:#fff}
+.hero{padding:48px 0;text-align:center}
+.hero h1{font-size:2.2rem;margin:8px 0}
+.lead{color:var(--muted)}
+.btn{display:inline-block;background:var(--accent);color:#fff;padding:10px 16px;border-radius:10px;text-decoration:none}
+.btn.outline{background:transparent;border:1px solid rgba(255,255,255,0.06)}
+.site-footer{padding:20px;text-align:center;color:var(--muted);font-size:0.9rem}
+
+/* Page */
+.page{padding:24px 0}
+.toolbar{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.toolbar input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:var(--card);color:#fff}
+.toolbar select{padding:10px;border-radius:10px;background:var(--card);color:#fff;border:1px solid rgba(255,255,255,0.03)}
+.ad-slot{margin:12px 0}
+.ad-placeholder{background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px dashed rgba(255,255,255,0.03);padding:20px;text-align:center;color:var(--muted);border-radius:8px}
+
+/* Grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.card{background:var(--card);border-radius:12px;overflow:hidden;position:relative}
+.card img{display:block;width:100%;height:160px;object-fit:cover}
+.card .meta{padding:8px;color:var(--muted);font-size:0.85rem}
+.card::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.25));opacity:0;transition:opacity .18s}
+.card:hover::after{opacity:1}
+
+/* Modal */
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:60;padding:20px}
+.modal-inner{max-width:1100px;width:100%;background:var(--card);border-radius:12px;overflow:hidden;padding:16px;display:flex;flex-direction:column;align-items:center}
+.modal img{max-width:100%;height:auto;border-radius:6px}
+.modal-close{position:absolute;right:28px;top:20px;background:transparent;border:none;color:#fff;font-size:20px}
+.modal-actions{margin-top:12px}
+
+/* Responsive tweaks */
+@media (max-width:600px){
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .card img{height:140px}
+}
+
+
+## --- script.js ---
+
+/*
+  script.js handles:
+  - loading list.json from images/<device>/list.json
+  - rendering grid
+  - search filtering
+  - modal preview + download
+  - auto-initialize based on <body data-device="...">
+*/
+
+async function initGallery(device){
+  const gallery = document.getElementById('gallery');
+  const searchInput = document.getElementById('search');
+  const sortSelect = document.getElementById('sort');
+  const modal = document.getElementById('previewModal');
+  const modalImg = document.getElementById('previewImg');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const modalClose = document.getElementById('modalClose');
+
+  if(!gallery) return; // page without gallery
+
+  const listUrl = `images/${device}/list.json`;
+  let items = [];
+  try{
+    const res = await fetch(listUrl);
+    if(!res.ok) throw new Error('Missing list.json');
+    items = await res.json();
+    if(!Array.isArray(items)) throw new Error('list.json is not an array');
+  }catch(e){
+    gallery.innerHTML = `<div class="ad-placeholder">Không tìm thấy images/${device}/list.json — vui lòng tạo file này chứa danh sách file ảnh (xem hướng dẫn).<br><small>${e.message}</small></div>`;
+    console.warn(e);
+    return;
+  }
+
+  function render(list){
+    gallery.innerHTML = '';
+    if(!list || !list.length){
+      gallery.innerHTML = '<div class="ad-placeholder">Không có hình nào. Hãy thêm ảnh vào thư mục images/' + device + '</div>';
+      return;
+    }
+    list.forEach(name => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      const img = document.createElement('img');
+      img.src = `images/${device}/${name}`;
+      img.alt = name;
+      img.loading = 'lazy';
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = name.replace(/[-_]/g,' ').replace(/\.(jpg|jpeg|png|webp)$/i,'');
+      card.appendChild(img);
+      card.appendChild(meta);
+      card.addEventListener('click', ()=>{
+        modal.style.display = 'flex';
+        modalImg.src = img.src;
+        downloadBtn.href = img.src;
+        downloadBtn.setAttribute('download', name);
+      });
+      gallery.appendChild(card);
+    });
+  }
+
+  render(items);
+
+  if(searchInput) searchInput.addEventListener('input', e=>{
+    const q = e.target.value.trim().toLowerCase();
+    const filtered = items.filter(n => n.toLowerCase().includes(q));
+    render(filtered);
+  });
+
+  if(sortSelect) sortSelect.addEventListener('change', e=>{
+    const v = e.target.value;
+    if(v === 'name') items.sort((a,b)=> a.localeCompare(b));
+    render(items);
+  });
+
+  if(modalClose) modalClose.addEventListener('click', ()=> modal.style.display = 'none');
+  if(modal) modal.addEventListener('click', (ev)=>{ if(ev.target === modal) modal.style.display = 'none'});
+}
+
+// Auto-init when script loads (safe because script is loaded with defer)
+document.addEventListener('DOMContentLoaded', () => {
+  // set year placeholders if any
+  const y = new Date().getFullYear();
+  document.querySelectorAll('#year, #year2').forEach(el => { if(el) el.textContent = y; });
+
+  const device = document.body && document.body.dataset && document.body.dataset.device;
+  if(device){
+    // call initGallery for the device specified on the body
+    initGallery(device).catch(err => console.error('initGallery failed:', err));
+  }
+});
+
+
+## --- images/*/list.json (sample) ---
+
+// Put this file at images/phone/list.json (and similarly for pc and ipad)
+[
+  "phone1.jpg",
+  "phone2.jpg",
+  "phone3.jpg",
+  "sunset-phone.jpg"
+]
+
+// images/pc/list.json
+[
+  "pc1.jpg",
+  "pc2.jpg",
+  "desktop-abstract.jpg"
+]
+
+// images/ipad/list.json
+[
+  "ipad1.jpg",
+  "ipad2.jpg"
+]
+
+---
